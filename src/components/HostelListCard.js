@@ -1,40 +1,47 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function HostelListCard({ hostel }) {
     return (
         <View style={styles.card}>
             {/* Image Section */}
             <View style={styles.imageContainer}>
-                <View style={styles.imagePlaceholder} />
+                <View style={styles.imagePlaceholder}>
+                    <Ionicons name="image-outline" size={32} color="#ccc" />
+                </View>
                 <View style={styles.verifiedBadge}>
-                    <Text style={styles.verifiedText}>✓ Verified</Text>
+                    <Ionicons name="shield-checkmark" size={12} color="#fff" style={{ marginRight: 4 }} />
+                    <Text style={styles.verifiedText}>Verified</Text>
                 </View>
             </View>
 
-            {/* Content Section */}
+            {/* Content */}
             <View style={styles.contentContainer}>
                 <View style={styles.headerRow}>
                     <Text style={styles.title}>{hostel.title}</Text>
                     <View style={styles.ratingBadge}>
-                        <Text style={styles.ratingText}>★ {hostel.rating}</Text>
+                        <Ionicons name="star" size={12} color="#F39C12" style={{ marginRight: 3 }} />
+                        <Text style={styles.ratingText}>{hostel.rating}</Text>
                     </View>
                 </View>
 
                 <View style={styles.locationRow}>
-                    <Text style={styles.locationText}>📍 {hostel.location}</Text>
-                    <Text style={styles.distanceText}>• {hostel.distance}</Text>
+                    <Ionicons name="location-outline" size={14} color="#717171" />
+                    <Text style={styles.locationText}>{hostel.location}</Text>
+                    <Text style={styles.distanceText}>• {hostel.distance} km</Text>
                 </View>
 
                 <View style={styles.reviewsRow}>
                     <View style={styles.genderBadge}>
+                        <Ionicons name={hostel.gender === 'Female' ? 'female' : hostel.gender === 'Male' ? 'male' : 'people'} size={12} color="#717171" style={{ marginRight: 4 }} />
                         <Text style={styles.genderText}>{hostel.gender}</Text>
                     </View>
-                    <Text style={styles.reviewText}>• {hostel.reviews} reviews</Text>
+                    <Text style={styles.reviewText}>{hostel.reviews} reviews</Text>
                 </View>
 
                 <View style={styles.amenitiesRow}>
-                    {hostel.amenities.map((amenity, index) => (
+                    {hostel.amenities?.slice(0, 3).map((amenity, index) => (
                         <View key={index} style={styles.amenityBadge}>
                             <Text style={styles.amenityText}>{amenity}</Text>
                         </View>
@@ -49,7 +56,8 @@ export default function HostelListCard({ hostel }) {
                         {hostel.price} <Text style={styles.perMonth}>/ month</Text>
                     </Text>
                     <TouchableOpacity style={styles.viewDetailsButton}>
-                        <Text style={styles.viewDetailsText}>View Details →</Text>
+                        <Text style={styles.viewDetailsText}>View Details</Text>
+                        <Ionicons name="arrow-forward" size={14} color="#EF475D" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -60,43 +68,46 @@ export default function HostelListCard({ hostel }) {
 const styles = StyleSheet.create({
     card: {
         backgroundColor: '#fff',
-        borderRadius: 12,
-        marginBottom: 20,
+        borderRadius: 16,
+        marginBottom: 16,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: '#eee',
-        // Shadow (subtle)
+        borderColor: '#F0F0F0',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
         elevation: 2,
     },
     imageContainer: {
-        height: 200,
-        backgroundColor: '#f0f0f0',
+        height: 180,
+        backgroundColor: '#F7F8FA',
         position: 'relative',
     },
     imagePlaceholder: {
         flex: 1,
-        backgroundColor: '#ddd', // Placeholder color
+        backgroundColor: '#F0F0F0',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     verifiedBadge: {
         position: 'absolute',
-        top: 10,
-        right: 10,
-        backgroundColor: '#00c853',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 4,
+        top: 12,
+        right: 12,
+        backgroundColor: '#27AE60',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     verifiedText: {
         color: '#fff',
-        fontSize: 12,
-        fontWeight: 'bold',
+        fontSize: 11,
+        fontWeight: '700',
     },
     contentContainer: {
-        padding: 16,
+        padding: 18,
     },
     headerRow: {
         flexDirection: 'row',
@@ -105,105 +116,121 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     title: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
+        fontSize: 17,
+        fontWeight: '700',
+        color: '#1A1A1A',
         flex: 1,
         marginRight: 10,
     },
     ratingBadge: {
-        backgroundColor: '#e3f2fd', // Light Blue
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 4,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFF8E1',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
     },
     ratingText: {
-        color: '#1a73e8', // Google Blue ish
-        fontWeight: 'bold',
-        fontSize: 14,
+        color: '#F39C12',
+        fontWeight: '800',
+        fontSize: 13,
     },
     locationRow: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 8,
+        gap: 4,
     },
     locationText: {
-        color: '#555',
-        fontSize: 14,
+        color: '#717171',
+        fontSize: 13,
     },
     distanceText: {
-        color: '#1a73e8',
-        fontSize: 14,
-        marginLeft: 5,
+        color: '#EF475D',
+        fontSize: 13,
+        fontWeight: '600',
+        marginLeft: 4,
     },
     reviewsRow: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 12,
+        gap: 8,
     },
     genderBadge: {
-        backgroundColor: '#f5f5f5',
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4,
-        marginRight: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F7F8FA',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#E8E8E8',
     },
     genderText: {
-        color: '#555',
+        color: '#717171',
         fontSize: 12,
         fontWeight: '600',
     },
     reviewText: {
-        color: '#777',
-        fontSize: 13,
+        color: '#999',
+        fontSize: 12,
     },
     amenitiesRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 8,
+        gap: 6,
         marginBottom: 16,
     },
     amenityBadge: {
-        backgroundColor: '#f8f9fa',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 4,
+        backgroundColor: '#F7F8FA',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#eee',
+        borderColor: '#E8E8E8',
     },
     amenityText: {
-        color: '#555',
+        color: '#717171',
         fontSize: 12,
+        fontWeight: '500',
     },
     moreAmenities: {
-        color: '#1a73e8',
+        color: '#EF475D',
         fontSize: 12,
+        fontWeight: '600',
         alignSelf: 'center',
     },
     footerRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingTop: 12,
+        paddingTop: 14,
         borderTopWidth: 1,
-        borderTopColor: '#f0f0f0',
+        borderTopColor: '#F7F8FA',
     },
     priceText: {
         fontSize: 18,
-        fontWeight: 'bold',
-        color: '#1a73e8',
+        fontWeight: '800',
+        color: '#EF475D',
     },
     perMonth: {
-        fontSize: 14,
-        fontWeight: 'normal',
-        color: '#555',
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#999',
     },
     viewDetailsButton: {
-        // No background, just text link style based on screenshot
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: '#FEF0F2',
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 10,
     },
     viewDetailsText: {
-        color: '#1a73e8',
-        fontWeight: '600',
-        fontSize: 14,
+        color: '#EF475D',
+        fontWeight: '700',
+        fontSize: 13,
     },
 });

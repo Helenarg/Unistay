@@ -1,68 +1,97 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { updateUserProfile } from '../../services/firestoreService';
 
 const UNIVERSITIES = [
-    { id: '1', name: 'University of Colombo' },
-    { id: '2', name: 'University of Moratuwa' },
-    { id: '3', name: 'University of Peradeniya' },
-    { id: '4', name: 'University of Kelaniya' },
-    { id: '5', name: 'University of Ruhuna' },
-    { id: '6', name: 'University of Sri Jayewardenepura' },
+    'University of Colombo',
+    'University of Moratuwa',
+    'University of Peradeniya',
+    'University of Kelaniya',
+    'University of Ruhuna',
+    'University of Sri Jayewardenepura',
 ];
+
+const UNI_COLORS = ['#1A1A2E', '#2C3E50', '#34495E', '#1A1A2E', '#2C3E50', '#34495E'];
 
 export default function UniversitySelectionScreen({ navigation }) {
     const { user, refreshProfile } = useAuth();
     const [search, setSearch] = useState('');
 
-    const filteredUniversities = UNIVERSITIES.filter(uni =>
-        uni.name.toLowerCase().includes(search.toLowerCase())
-    );
+    const filtered = UNIVERSITIES.filter(u => u.toLowerCase().includes(search.toLowerCase()));
 
     const handleSelect = async (uni) => {
         try {
-            // Save to Firestore user profile
             if (user) {
-                await updateUserProfile(user.uid, { university: uni.name });
+                await updateUserProfile(user.uid, { university: uni });
                 await refreshProfile();
             }
-            navigation.navigate('StudentHome', { selectedUniversity: uni.name });
+            navigation.navigate('StudentHome', { selectedUniversity: uni });
         } catch (err) {
-            console.error('Error saving university:', err);
-            Alert.alert('Error', 'Failed to save university selection. Please try again.');
-            // Navigate anyway with param
-            navigation.navigate('StudentHome', { selectedUniversity: uni.name });
+            Alert.alert('Error', 'Failed to update university. Please try again.');
         }
     };
 
     return (
         <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                    <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Select University</Text>
+                <View style={{ width: 40 }} />
+            </View>
+
             <View style={styles.content}>
-                <Text style={styles.header}>Select Your University</Text>
-                <Text style={styles.subHeader}>We'll show you places nearby.</Text>
+                <Text style={styles.title}>Choose Your University</Text>
+                <Text style={styles.subtitle}>We'll show you accommodation near your campus</Text>
 
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="Search University..."
-                    value={search}
-                    onChangeText={setSearch}
-                />
-
-                <FlatList
-                    data={filteredUniversities}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={styles.item}
-                            onPress={() => handleSelect(item)}
-                        >
-                            <Text style={styles.itemText}>{item.name}</Text>
+                <View style={styles.searchContainer}>
+                    <Ionicons name="search" size={18} color="#999" style={{ marginRight: 10 }} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search universities..."
+                        placeholderTextColor="#AAA"
+                        value={search}
+                        onChangeText={setSearch}
+                    />
+                    {search.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearch('')}>
+                            <Ionicons name="close-circle" size={18} color="#ccc" />
                         </TouchableOpacity>
                     )}
+                </View>
+
+                <FlatList
+                    data={filtered}
+                    keyExtractor={(item) => item}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 20 }}
+                    renderItem={({ item, index }) => {
+                        const abbr = item.split(' ').filter(w => w.length > 2).map(w => w[0]).join('').toUpperCase();
+                        const color = UNI_COLORS[UNIVERSITIES.indexOf(item)] || '#1A1A2E';
+                        return (
+                            <TouchableOpacity style={styles.uniCard} onPress={() => handleSelect(item)} activeOpacity={0.7}>
+                                <View style={[styles.uniAvatar, { backgroundColor: color }]}>
+                                    <Text style={styles.uniAbbr}>{abbr}</Text>
+                                </View>
+                                <View style={styles.uniInfo}>
+                                    <Text style={styles.uniName}>{item}</Text>
+                                    <Text style={styles.uniLocation}>Sri Lanka</Text>
+                                </View>
+                                <View style={styles.uniArrow}>
+                                    <Ionicons name="arrow-forward" size={14} color="#EF475D" />
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    }}
                     ListEmptyComponent={
-                        <Text style={styles.emptyText}>No universities found.</Text>
+                        <View style={styles.emptyState}>
+                            <Ionicons name="school-outline" size={36} color="#E8E8E8" />
+                            <Text style={styles.emptyText}>No universities match your search</Text>
+                        </View>
                     }
                 />
             </View>
@@ -73,45 +102,105 @@ export default function UniversitySelectionScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
-        ...(Platform.OS === 'web' ? { height: '100vh', overflow: 'auto' } : {}),
-    },
-    content: {
-        padding: 20,
-        flex: 1,
+        backgroundColor: '#F7F8FA',
+        ...(Platform.OS === 'web' ? { minHeight: '100vh' } : {}),
     },
     header: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 5,
-        color: '#333',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 14,
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
     },
-    subHeader: {
-        fontSize: 16,
-        color: '#666',
+    backBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: '#F7F8FA',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerTitle: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: '#1A1A1A',
+    },
+    content: {
+        flex: 1,
+        padding: 20,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: '#1A1A1A',
+        marginBottom: 6,
+    },
+    subtitle: {
+        fontSize: 14,
+        color: '#717171',
         marginBottom: 20,
     },
-    searchInput: {
-        backgroundColor: '#f5f5f5',
-        padding: 15,
-        borderRadius: 10,
-        fontSize: 16,
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderRadius: 14,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
         marginBottom: 20,
         borderWidth: 1,
-        borderColor: '#eee',
+        borderColor: '#E8E8E8',
     },
-    item: {
-        padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
+    searchInput: {
+        flex: 1,
+        fontSize: 15,
+        color: '#1A1A1A',
+        ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
     },
-    itemText: {
-        fontSize: 16,
-        color: '#333',
+    uniCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        padding: 16,
+        borderRadius: 14,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
+        gap: 14,
+    },
+    uniAvatar: {
+        width: 48,
+        height: 48,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    uniAbbr: {
+        color: '#fff',
+        fontWeight: '800',
+        fontSize: 14,
+    },
+    uniInfo: { flex: 1 },
+    uniName: { fontWeight: '700', fontSize: 15, color: '#1A1A1A' },
+    uniLocation: { fontSize: 12, color: '#717171', marginTop: 2 },
+    uniArrow: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#FEF0F2',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    emptyState: {
+        alignItems: 'center',
+        padding: 40,
     },
     emptyText: {
-        textAlign: 'center',
         color: '#999',
-        marginTop: 20,
+        marginTop: 12,
+        fontSize: 14,
     },
 });

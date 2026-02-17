@@ -1,65 +1,73 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web' && width > 768;
 
 export default function WebFooter() {
-    if (!isWeb) return null; // Or render a simplified mobile footer
+    if (!isWeb) return null;
 
     return (
         <View style={styles.footerContainer}>
             <View style={styles.topSection}>
-                {/* Column 1: Brand */}
+                {/* Brand */}
                 <View style={styles.column}>
                     <View style={styles.brandRow}>
-                        <View style={styles.logoIcon}><Text>🏠</Text></View>
-                        <Text style={styles.brandName}>UniStay.lk</Text>
+                        <View style={styles.logoIcon}>
+                            <Ionicons name="home" size={16} color="#fff" />
+                        </View>
+                        <Text style={styles.brandName}>UniStay<Text style={{ color: '#EF475D' }}>.lk</Text></Text>
                     </View>
                     <Text style={styles.brandDesc}>
-                        Sri Lanka's trusted marketplace for university students to find safe, verified, and affordable hostels.
+                        Sri Lanka's most trusted marketplace for university students to find safe, verified, and affordable accommodation.
                     </Text>
                     <View style={styles.socialRow}>
-                        <SocialIcon icon="f" />
-                        <SocialIcon icon="in" />
-                        <SocialIcon icon="tw" />
+                        <SocialIcon name="logo-facebook" />
+                        <SocialIcon name="logo-instagram" />
+                        <SocialIcon name="logo-twitter" />
+                        <SocialIcon name="logo-linkedin" />
                     </View>
                 </View>
 
-                {/* Column 2: For Students */}
+                {/* For Students */}
                 <View style={styles.column}>
                     <Text style={styles.columnTitle}>For Students</Text>
                     <FooterLink text="Find Hostels" />
                     <FooterLink text="My Dashboard" />
                     <FooterLink text="How It Works" />
                     <FooterLink text="Student FAQ" />
+                    <FooterLink text="Verification Guide" />
                 </View>
 
-                {/* Column 3: For Landlords */}
+                {/* For Landlords */}
                 <View style={styles.column}>
                     <Text style={styles.columnTitle}>For Landlords</Text>
                     <FooterLink text="List Your Property" />
                     <FooterLink text="Getting Started" />
                     <FooterLink text="Landlord FAQ" />
-                    <FooterLink text="Pricing" />
+                    <FooterLink text="Pricing Plans" />
+                    <FooterLink text="Partner With Us" />
                 </View>
 
-                {/* Column 4: Contact Us */}
+                {/* Contact */}
                 <View style={styles.column}>
                     <Text style={styles.columnTitle}>Contact Us</Text>
-                    <ContactItem icon="✉️" text="support@unistay.lk" />
-                    <ContactItem icon="📞" text="+94 11 234 5678" />
-                    <ContactItem icon="📍" text="Colombo, Sri Lanka" />
+                    <ContactItem icon="mail-outline" text="info@unistay.lk" />
+                    <ContactItem icon="call-outline" text="+94 11 234 5678" />
+                    <ContactItem icon="location-outline" text="Colombo, Sri Lanka" />
+                    <ContactItem icon="time-outline" text="Mon-Fri, 9am-6pm" />
                 </View>
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.bottomSection}>
-                <Text style={styles.copyright}>© 2024 UniStay.lk. All rights reserved.</Text>
+                <Text style={styles.copyright}>© 2025 UniStay.lk. All rights reserved.</Text>
                 <View style={styles.bottomLinks}>
                     <TouchableOpacity><Text style={styles.bottomLinkText}>Terms & Conditions</Text></TouchableOpacity>
                     <TouchableOpacity><Text style={styles.bottomLinkText}>Privacy Policy</Text></TouchableOpacity>
+                    <TouchableOpacity><Text style={styles.bottomLinkText}>Cookie Policy</Text></TouchableOpacity>
                 </View>
             </View>
         </View>
@@ -77,25 +85,25 @@ function FooterLink({ text }) {
 function ContactItem({ icon, text }) {
     return (
         <View style={styles.contactItem}>
-            <Text style={styles.contactIcon}>{icon}</Text>
+            <Ionicons name={icon} size={16} color="#EF475D" style={{ marginRight: 10 }} />
             <Text style={styles.contactText}>{text}</Text>
         </View>
     );
 }
 
-function SocialIcon({ icon }) {
+function SocialIcon({ name }) {
     return (
         <TouchableOpacity style={styles.socialIcon}>
-            <Text style={{ color: '#fff' }}>{icon}</Text>
+            <Ionicons name={name} size={16} color="#fff" />
         </TouchableOpacity>
     );
 }
 
 const styles = StyleSheet.create({
     footerContainer: {
-        backgroundColor: '#1a202c', // Dark slate/bluegray
+        backgroundColor: '#1A1A2E',
         paddingVertical: 60,
-        paddingHorizontal: 100,
+        paddingHorizontal: 80,
         width: '100%',
     },
     topSection: {
@@ -107,52 +115,57 @@ const styles = StyleSheet.create({
     },
     column: {
         flex: 1,
-        minWidth: 200,
+        minWidth: 180,
     },
     brandRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: 16,
     },
     logoIcon: {
-        backgroundColor: '#00afb9',
-        padding: 5,
-        borderRadius: 5,
+        backgroundColor: '#EF475D',
+        width: 32,
+        height: 32,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
         marginRight: 10,
     },
     brandName: {
         fontSize: 20,
-        fontWeight: 'bold',
+        fontWeight: '800',
         color: '#fff',
     },
     brandDesc: {
-        color: '#a0aec0',
-        lineHeight: 24,
+        color: '#8B8BA3',
+        lineHeight: 22,
         marginBottom: 20,
+        fontSize: 14,
     },
     socialRow: {
         flexDirection: 'row',
         gap: 10,
     },
     socialIcon: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#4a5568',
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#2D2D4A',
         justifyContent: 'center',
         alignItems: 'center',
     },
     columnTitle: {
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '700',
         color: '#fff',
         marginBottom: 20,
+        letterSpacing: 0.5,
     },
     linkButton: {
         marginBottom: 12,
     },
     linkText: {
-        color: '#a0aec0',
+        color: '#8B8BA3',
         fontSize: 14,
     },
     contactItem: {
@@ -160,17 +173,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 15,
     },
-    contactIcon: {
-        marginRight: 10,
-        fontSize: 16,
-    },
     contactText: {
-        color: '#a0aec0',
+        color: '#8B8BA3',
         fontSize: 14,
     },
     divider: {
         height: 1,
-        backgroundColor: '#2d3748',
+        backgroundColor: '#2D2D4A',
         marginBottom: 30,
     },
     bottomSection: {
@@ -179,15 +188,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     copyright: {
-        color: '#718096',
-        fontSize: 14,
+        color: '#5A5A7A',
+        fontSize: 13,
     },
     bottomLinks: {
         flexDirection: 'row',
-        gap: 20,
+        gap: 24,
     },
     bottomLinkText: {
-        color: '#718096',
-        fontSize: 14,
+        color: '#5A5A7A',
+        fontSize: 13,
     },
 });

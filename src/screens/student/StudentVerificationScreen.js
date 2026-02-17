@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { submitVerification, getVerificationStatus } from '../../services/firestoreService';
@@ -16,9 +17,7 @@ export default function StudentVerificationScreen({ navigation }) {
     const [existingVerification, setExistingVerification] = useState(null);
     const [checkingStatus, setCheckingStatus] = useState(true);
 
-    useEffect(() => {
-        checkExistingVerification();
-    }, []);
+    useEffect(() => { checkExistingVerification(); }, []);
 
     const checkExistingVerification = async () => {
         try {
@@ -39,13 +38,9 @@ export default function StudentVerificationScreen({ navigation }) {
             allowsEditing: true,
             quality: 0.7,
         });
-
         if (!result.canceled && result.assets[0]) {
-            if (type === 'nic') {
-                setNicPhoto(result.assets[0].uri);
-            } else {
-                setStudentIdPhoto(result.assets[0].uri);
-            }
+            if (type === 'nic') setNicPhoto(result.assets[0].uri);
+            else setStudentIdPhoto(result.assets[0].uri);
         }
     };
 
@@ -54,38 +49,14 @@ export default function StudentVerificationScreen({ navigation }) {
             Alert.alert('Missing Fields', 'Please enter both your NIC and Student ID number.');
             return;
         }
-
         setLoading(true);
         try {
-            let nicPhotoURL = null;
-            let studentIdPhotoURL = null;
-
-            // Upload photos if selected
-            if (nicPhoto) {
-                nicPhotoURL = await uploadVerificationDoc(user.uid, nicPhoto, 'nic');
-            }
-            if (studentIdPhoto) {
-                studentIdPhotoURL = await uploadVerificationDoc(user.uid, studentIdPhoto, 'student_id');
-            }
-
-            // Submit to Firestore
-            await submitVerification(user.uid, {
-                role: 'student',
-                nic,
-                studentId,
-                nicPhotoURL,
-                studentIdPhotoURL,
-            });
-
+            let nicPhotoURL = null, studentIdPhotoURL = null;
+            if (nicPhoto) nicPhotoURL = await uploadVerificationDoc(user.uid, nicPhoto, 'nic');
+            if (studentIdPhoto) studentIdPhotoURL = await uploadVerificationDoc(user.uid, studentIdPhoto, 'student_id');
+            await submitVerification(user.uid, { role: 'student', nic, studentId, nicPhotoURL, studentIdPhotoURL });
             await refreshProfile();
-
-            Alert.alert(
-                'Verification Submitted',
-                'Your details have been sent for verification.',
-                [
-                    { text: 'OK', onPress: () => navigation.goBack() }
-                ]
-            );
+            Alert.alert('Verification Submitted', 'Your details have been sent for verification.', [{ text: 'OK', onPress: () => navigation.goBack() }]);
         } catch (err) {
             console.error('Verification error:', err);
             Alert.alert('Error', 'Failed to submit verification. Please try again.');
@@ -97,34 +68,46 @@ export default function StudentVerificationScreen({ navigation }) {
     if (checkingStatus) {
         return (
             <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-                <ActivityIndicator size="large" color="#007AFF" />
+                <ActivityIndicator size="large" color="#EF475D" />
             </SafeAreaView>
         );
     }
 
-    // Show status if already submitted
+    // Already submitted
     if (existingVerification) {
+        const st = existingVerification.status;
+        const statusConfig = st === 'verified'
+            ? { icon: 'shield-checkmark', bg: '#E8F5E9', color: '#27AE60', label: 'Verified', desc: 'Your identity has been verified successfully.' }
+            : st === 'pending'
+                ? { icon: 'time', bg: '#FFF8E1', color: '#F39C12', label: 'Pending Review', desc: 'Your documents are being reviewed. This usually takes 1-2 business days.' }
+                : { icon: 'close-circle', bg: '#FEEEEF', color: '#EF475D', label: 'Rejected', desc: 'Your verification was not approved. Please try again.' };
+
         return (
             <SafeAreaView style={styles.container}>
                 <ScrollView contentContainerStyle={styles.content}>
-                    <Text style={styles.title}>Verification Status</Text>
-                    <View style={styles.statusCard}>
-                        <View style={[styles.statusIndicator, {
-                            backgroundColor: existingVerification.status === 'verified' ? '#d4edda' :
-                                existingVerification.status === 'pending' ? '#fff3cd' : '#f8d7da'
-                        }]}>
-                            <Text style={[styles.statusLabel, {
-                                color: existingVerification.status === 'verified' ? '#155724' :
-                                    existingVerification.status === 'pending' ? '#856404' : '#721c24'
-                            }]}>
-                                {existingVerification.status === 'verified' ? '✓ Verified' :
-                                    existingVerification.status === 'pending' ? '⏳ Pending Review' : '✕ Rejected'}
-                            </Text>
+                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
+                    </TouchableOpacity>
+
+                    <View style={styles.statusPage}>
+                        <View style={[styles.statusIconCircle, { backgroundColor: statusConfig.bg }]}>
+                            <Ionicons name={statusConfig.icon} size={40} color={statusConfig.color} />
                         </View>
-                        <Text style={styles.statusDetail}>NIC: {existingVerification.nic}</Text>
-                        {existingVerification.studentId && (
-                            <Text style={styles.statusDetail}>Student ID: {existingVerification.studentId}</Text>
-                        )}
+                        <Text style={styles.statusTitle}>{statusConfig.label}</Text>
+                        <Text style={styles.statusDesc}>{statusConfig.desc}</Text>
+
+                        <View style={styles.detailCard}>
+                            <View style={styles.detailRow}>
+                                <Text style={styles.detailLabel}>NIC Number</Text>
+                                <Text style={styles.detailValue}>{existingVerification.nic}</Text>
+                            </View>
+                            {existingVerification.studentId && (
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Student ID</Text>
+                                    <Text style={styles.detailValue}>{existingVerification.studentId}</Text>
+                                </View>
+                            )}
+                        </View>
                     </View>
                 </ScrollView>
             </SafeAreaView>
@@ -134,150 +117,205 @@ export default function StudentVerificationScreen({ navigation }) {
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.content}>
-                <Text style={styles.title}>Verify Identity</Text>
-                <Text style={styles.subtitle}>
-                    To book stays, we need to verify that you are a registered student.
-                </Text>
-
-                <View style={styles.formSection}>
-                    <Text style={styles.label}>NIC Number</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter your NIC number"
-                        value={nic}
-                        onChangeText={setNic}
-                        editable={!loading}
-                    />
-
-                    <Text style={styles.label}>Student ID Number</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter your University Registration Number"
-                        value={studentId}
-                        onChangeText={setStudentId}
-                        editable={!loading}
-                    />
-                </View>
-
-                <View style={styles.uploadSection}>
-                    <Text style={styles.label}>Upload Documents (Optional)</Text>
-                    <TouchableOpacity style={styles.uploadButton} onPress={() => pickImage('nic')} disabled={loading}>
-                        <Text style={styles.uploadButtonText}>
-                            {nicPhoto ? '✓ NIC Photo Selected' : 'Upload NIC Photo'}
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.uploadButton} onPress={() => pickImage('studentId')} disabled={loading}>
-                        <Text style={styles.uploadButtonText}>
-                            {studentIdPhoto ? '✓ Student ID Photo Selected' : 'Upload Student ID Photo'}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity style={[styles.submitButton, loading && { opacity: 0.7 }]} onPress={handleSubmit} disabled={loading}>
-                    {loading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text style={styles.submitButtonText}>Submit for Verification</Text>
-                    )}
+                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                    <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
                 </TouchableOpacity>
+
+                <View style={styles.formCard}>
+                    <View style={styles.headerIconCircle}>
+                        <Ionicons name="shield-checkmark" size={28} color="#EF475D" />
+                    </View>
+                    <Text style={styles.title}>Verify Your Identity</Text>
+                    <Text style={styles.subtitle}>To book accommodation, we need to verify that you're a registered student.</Text>
+
+                    <View style={styles.form}>
+                        <Text style={styles.label}>NIC Number</Text>
+                        <View style={styles.inputContainer}>
+                            <Ionicons name="card-outline" size={18} color="#999" style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter your NIC number"
+                                placeholderTextColor="#AAA"
+                                value={nic}
+                                onChangeText={setNic}
+                                editable={!loading}
+                            />
+                        </View>
+
+                        <Text style={styles.label}>Student ID Number</Text>
+                        <View style={styles.inputContainer}>
+                            <Ionicons name="school-outline" size={18} color="#999" style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter your registration number"
+                                placeholderTextColor="#AAA"
+                                value={studentId}
+                                onChangeText={setStudentId}
+                                editable={!loading}
+                            />
+                        </View>
+                    </View>
+
+                    <View style={styles.uploadSection}>
+                        <Text style={styles.uploadLabel}>Upload Documents <Text style={{ color: '#999', fontWeight: '400' }}>(Optional)</Text></Text>
+
+                        <TouchableOpacity style={[styles.uploadButton, nicPhoto && styles.uploadButtonDone]} onPress={() => pickImage('nic')} disabled={loading}>
+                            <View style={[styles.uploadIconCircle, nicPhoto && { backgroundColor: '#E8F5E9' }]}>
+                                <Ionicons name={nicPhoto ? 'checkmark-circle' : 'camera-outline'} size={20} color={nicPhoto ? '#27AE60' : '#EF475D'} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.uploadBtnTitle}>{nicPhoto ? 'NIC Photo Selected' : 'Upload NIC Photo'}</Text>
+                                <Text style={styles.uploadBtnDesc}>Take or select a clear photo of your NIC</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={16} color="#ccc" />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.uploadButton, studentIdPhoto && styles.uploadButtonDone]} onPress={() => pickImage('studentId')} disabled={loading}>
+                            <View style={[styles.uploadIconCircle, studentIdPhoto && { backgroundColor: '#E8F5E9' }]}>
+                                <Ionicons name={studentIdPhoto ? 'checkmark-circle' : 'camera-outline'} size={20} color={studentIdPhoto ? '#27AE60' : '#EF475D'} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.uploadBtnTitle}>{studentIdPhoto ? 'Student ID Selected' : 'Upload Student ID'}</Text>
+                                <Text style={styles.uploadBtnDesc}>Take or select a clear photo of your ID card</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={16} color="#ccc" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <TouchableOpacity style={[styles.submitButton, loading && { opacity: 0.7 }]} onPress={handleSubmit} disabled={loading} activeOpacity={0.85}>
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <>
+                                <Ionicons name="shield-checkmark" size={18} color="#fff" style={{ marginRight: 8 }} />
+                                <Text style={styles.submitButtonText}>Submit for Verification</Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
+                </View>
             </ScrollView>
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
-    content: {
-        padding: 20,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 10,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#666',
-        marginBottom: 30,
-        lineHeight: 24,
-    },
-    formSection: {
-        marginBottom: 30,
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 8,
-        marginTop: 15,
-    },
-    input: {
-        backgroundColor: '#f9f9f9',
-        borderWidth: 1,
-        borderColor: '#eee',
-        borderRadius: 10,
-        padding: 15,
-        fontSize: 16,
-    },
-    uploadSection: {
-        marginBottom: 30,
-        gap: 15,
-    },
-    uploadButton: {
-        borderWidth: 2,
-        borderColor: '#007AFF',
-        borderStyle: 'dashed',
-        borderRadius: 10,
-        padding: 15,
-        alignItems: 'center',
-        backgroundColor: '#f0f9ff',
-    },
-    uploadButtonText: {
-        color: '#007AFF',
-        fontWeight: '600',
-    },
-    submitButton: {
-        backgroundColor: '#007AFF',
-        padding: 18,
-        borderRadius: 12,
-        alignItems: 'center',
-        shadowColor: '#007AFF',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 6,
-    },
-    submitButtonText: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    statusCard: {
-        backgroundColor: '#f8f9fa',
-        borderRadius: 12,
-        padding: 20,
-        marginTop: 20,
-        borderWidth: 1,
-        borderColor: '#eee',
-    },
-    statusIndicator: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 8,
+    container: { flex: 1, backgroundColor: '#F7F8FA', ...(Platform.OS === 'web' ? { minHeight: '100vh' } : {}) },
+    content: { padding: 20, alignItems: 'center' },
+    backBtn: {
         alignSelf: 'flex-start',
-        marginBottom: 15,
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#E8E8E8',
     },
-    statusLabel: {
-        fontWeight: '600',
-        fontSize: 16,
+    formCard: {
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 32,
+        width: '100%',
+        maxWidth: 480,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 20,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
+        alignItems: 'center',
     },
-    statusDetail: {
-        fontSize: 14,
-        color: '#666',
-        marginTop: 5,
+    headerIconCircle: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: '#FEF0F2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
     },
+    title: { fontSize: 24, fontWeight: '800', color: '#1A1A1A', textAlign: 'center' },
+    subtitle: { fontSize: 14, color: '#717171', textAlign: 'center', marginTop: 6, marginBottom: 28, lineHeight: 22, maxWidth: 350 },
+    form: { width: '100%' },
+    label: { fontSize: 13, fontWeight: '600', color: '#1A1A1A', marginBottom: 8, marginTop: 16 },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F7F8FA',
+        borderWidth: 1,
+        borderColor: '#E8E8E8',
+        borderRadius: 12,
+        paddingHorizontal: 14,
+    },
+    inputIcon: { marginRight: 10 },
+    input: {
+        flex: 1,
+        paddingVertical: 14,
+        fontSize: 15,
+        color: '#1A1A1A',
+        ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
+    },
+    uploadSection: { width: '100%', marginTop: 24, gap: 12 },
+    uploadLabel: { fontSize: 14, fontWeight: '700', color: '#1A1A1A', marginBottom: 4 },
+    uploadButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F7F8FA',
+        borderWidth: 1.5,
+        borderColor: '#E8E8E8',
+        borderRadius: 14,
+        padding: 14,
+        gap: 12,
+    },
+    uploadButtonDone: { borderColor: '#27AE60', backgroundColor: '#FAFFF5' },
+    uploadIconCircle: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: '#FEF0F2',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    uploadBtnTitle: { fontSize: 14, fontWeight: '700', color: '#1A1A1A' },
+    uploadBtnDesc: { fontSize: 12, color: '#999', marginTop: 2 },
+    submitButton: {
+        backgroundColor: '#EF475D',
+        paddingVertical: 16,
+        borderRadius: 14,
+        alignItems: 'center',
+        width: '100%',
+        marginTop: 28,
+        flexDirection: 'row',
+        justifyContent: 'center',
+    },
+    submitButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+    // Status Page
+    statusPage: { alignItems: 'center', paddingTop: 20 },
+    statusIconCircle: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    statusTitle: { fontSize: 24, fontWeight: '800', color: '#1A1A1A', marginBottom: 8 },
+    statusDesc: { fontSize: 14, color: '#717171', textAlign: 'center', maxWidth: 300, lineHeight: 22 },
+    detailCard: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 20,
+        marginTop: 24,
+        width: '100%',
+        maxWidth: 400,
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
+    },
+    detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F7F8FA' },
+    detailLabel: { fontSize: 14, color: '#999', fontWeight: '500' },
+    detailValue: { fontSize: 14, fontWeight: '700', color: '#1A1A1A' },
 });
